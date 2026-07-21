@@ -1,0 +1,44 @@
+# mikulicknjige.com — Next.js app + its own MariaDB.
+# Deployed on the Luminor/FuturaOS server via Dokploy (compose from Git).
+# Secrets come from Dokploy's compose environment, never from this file.
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: mikulic
+      MARIADB_USER: mikulic
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql://mikulic:${DB_PASSWORD}@db:3306/mikulic
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      NODE_ENV: production
+      PORT: "3006"
+      HOSTNAME: 0.0.0.0
+      # Contact form / order notifications stay off until a mailbox exists;
+      # submissions are still stored in the database.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
