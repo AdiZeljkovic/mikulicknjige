@@ -17,7 +17,8 @@ import Newsletter from '@/components/home/Newsletter';
 import { prisma } from '@/lib/prisma';
 import { bookToUI } from '@/lib/format';
 
-export const revalidate = 3600;
+// Vidi komentar u knjige/page.tsx — baza nije dostupna dok se image gradi.
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const [allBooks, featuredBook] = await Promise.all([

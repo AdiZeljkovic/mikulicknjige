@@ -7,7 +7,10 @@ export const metadata = {
   description: 'Pregledajte sva izdanja izdavačke kuće Art Rabic.',
 };
 
-export const revalidate = 3600;
+// Render na zahtjev umjesto pri buildu: u kontejnerskom deployu baza ne
+// postoji dok se image gradi, a prazan katalog keširan sat vremena bio bi
+// gori od jednog upita po posjeti. Katalog se ionako mijenja iz admina.
+export const dynamic = 'force-dynamic';
 
 export default async function BooksPage() {
   const dbBooks = await prisma.book.findMany({
