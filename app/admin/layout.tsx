@@ -3,7 +3,13 @@ import { redirect } from 'next/navigation';
 import { verifyAdminToken } from '@/lib/auth';
 import AdminSidebar from './AdminSidebar';
 
-export const metadata = { title: 'Admin | Art Rabic' };
+// robots.txt već zabranjuje /admin/, ali to je samo molba crawleru i ne
+// pomaže ako URL negdje procuri. `noindex` je ono što stvarno drži admin
+// izvan rezultata pretrage.
+export const metadata = {
+  title: 'Admin',
+  robots: { index: false, follow: false, nocache: true },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();

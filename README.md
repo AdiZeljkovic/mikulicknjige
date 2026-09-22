@@ -47,10 +47,14 @@ app/
     kontakt/  o-nama/  o-kupovini/  uslovi-kupovine/  pravila-koristenja/
   admin/               Admin panel (zaštićen middlewareom i layout provjerom)
   api/                 REST rute
+  og/                  OpenGraph kartice 1200×630 (generička i po knjizi)
   layout.tsx           Root layout — namjerno bez headers(), da ISR radi
+  robots.ts            robots.txt
+  sitemap.ts           sitemap.xml sa knjigama i koricama
   not-found.tsx        404
   error.tsx            500
 components/            React komponente po domenu
+  seo/JsonLd.tsx       Ubacivanje schema.org podataka
 lib/
   prisma.ts            PrismaClient singleton
   auth.ts              Potpisivanje i verifikacija admin sesije
@@ -58,6 +62,8 @@ lib/
   rate-limit.ts        In-memory rate limiter
   ip.ts                Ekstrakcija stvarne IP adrese iza proxyja
   format.ts            Formatiranje cijena, mapiranje modela u UI tip
+  seo.ts               Metadata helper, canonical i JSON-LD builderi
+  og.tsx               Izgled OpenGraph kartice
 prisma/
   schema.prisma        Model baze
   migrations/          Migracije
@@ -82,6 +88,30 @@ Root layout ne smije pozivati `headers()` — taj poziv forsira dinamički rende
 | Početna, `/knjige` | `force-dynamic` | Baza ne postoji dok se image gradi. Prazan katalog keširan sat vremena bio bi gori od jednog upita po posjeti. |
 | `/knjige/[id]` | ISR, `revalidate = 3600` | `generateStaticParams` hvata grešku ako baza nije dostupna i pada na on-demand generisanje. |
 | Statične stranice | Statički | Nemaju upita na bazu. |
+
+### SEO
+
+Sve je centralizovano u `lib/seo.ts`.
+
+| Šta | Gdje |
+|---|---|
+| Naslov, opis, canonical, OG, Twitter | `buildMetadata()` — svaka stranica ga zove, nijedna ne piše `openGraph` ručno |
+| Organization + WebSite | `app/layout.tsx`, vrijedi za cijeli sajt |
+| Book + Offer (cijena, dostupnost) | `app/(site)/knjige/[id]/page.tsx` |
+| BreadcrumbList | katalog, detalj knjige i sve podstranice |
+| ItemList | `/knjige` |
+| FAQPage | `/o-kupovini` |
+| OG kartice 1200×630 | `app/og/route.tsx` i `app/og/knjiga/[id]/route.tsx` |
+
+Dvije stvari koje izgledaju kao propust, a nisu:
+
+**`buildMetadata()` postoji zato što Next zamjenjuje cijeli `openGraph` objekat.** Kad stranica sama definiše `openGraph`, naslijeđeni iz korijena nestane — uključujući `images`. Posljedica je stranica bez `og:image`, što se ne primijeti dok neko ne podijeli link. Iz istog razloga se **ne koristi `opengraph-image.tsx` konvencija** nego eksplicitne rute pod `/og`.
+
+**OG kartice ne sadrže koricu.** Sve korice su WebP, koji satori ne čita, a konverzija kroz sharp po zahtjevu je upravo ono što je ranije obaralo proces. Kartica je tipografska: naslov, autor, cijena i brend.
+
+`/checkout/`, `/admin` i 404 su `noindex`. Checkout se namjerno **ne** zabranjuje u `robots.txt` — zabranjen URL crawler ne dohvati, pa ne vidi ni `noindex`, a i dalje može završiti u indeksu bez opisa.
+
+> `lib/seo.ts` nema telefon ni email. Vrijednosti na kontakt stranici su placeholderi (`+387 33 123 456`, `artrabic.ba`); lažan kontakt u strukturiranim podacima Google preuzima kao zvaničan. Dodaj `contactPoint` tek kad budu potvrđeni pravi.
 
 ### Originalni skenovi
 
@@ -307,7 +337,8 @@ Implementirano:
 - Escape korisničkog unosa u HTML email templateima
 - Validacija dužine svih polja prema kolonama baze
 - Sigurnosni headeri: HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, CSP (report-only)
-- Nema `dangerouslySetInnerHTML`, nema raw SQL-a, nema mass assignmenta
+- Nema raw SQL-a, nema mass assignmenta
+- Jedini `dangerouslySetInnerHTML` je u `components/seo/JsonLd.tsx` — JSON-LD se drugačije ne može ubaciti. `jsonLdScript()` escape-uje `<`, pa naslov knjige sa `</script>` ne može zatvoriti tag
 
 Otvoreno:
 

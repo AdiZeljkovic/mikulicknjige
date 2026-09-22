@@ -1,11 +1,16 @@
+import type { Metadata } from 'next';
 import BooksListContent from '@/components/books/BooksListContent';
+import JsonLd from '@/components/seo/JsonLd';
 import { prisma } from '@/lib/prisma';
 import { bookToUI } from '@/lib/format';
+import { bookListLd, breadcrumbLd, buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Naše knjige | Art Rabic',
-  description: 'Pregledajte sva izdanja izdavačke kuće Art Rabic.',
-};
+export const metadata: Metadata = buildMetadata({
+  title: 'Naše knjige',
+  description:
+    'Kompletan katalog izdavačke kuće Art Rabic — preko 160 naslova: monografije, knjige o Sarajevu i historiji BiH, eseji i umjetnost. Naručite uz dostavu pouzećem.',
+  path: '/knjige',
+});
 
 // Render na zahtjev umjesto pri buildu: u kontejnerskom deployu baza ne
 // postoji dok se image gradi, a prazan katalog keširan sat vremena bio bi
@@ -23,5 +28,17 @@ export default async function BooksPage() {
   });
 
   const books = dbBooks.map(bookToUI);
-  return <BooksListContent books={books} />;
+
+  return (
+    <>
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Početna', path: '/' },
+          { name: 'Naše knjige', path: '/knjige' },
+        ])}
+      />
+      <JsonLd data={bookListLd(dbBooks)} />
+      <BooksListContent books={books} />
+    </>
+  );
 }

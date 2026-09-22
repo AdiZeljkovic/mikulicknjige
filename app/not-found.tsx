@@ -2,7 +2,17 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
-export const metadata = { title: 'Stranica nije pronađena' };
+// 404 vraća ispravan status, ali `noindex` je pojas i tregeri: sprječava da
+// stranica ikad završi u indeksu ako se status izgubi iza proxyja ili keša.
+export const metadata = {
+  title: 'Stranica nije pronađena',
+  robots: { index: false, follow: true },
+  // Bez canonicala — 404 ne smije proglasiti sebe kanonskom verzijom ičega.
+  openGraph: {
+    title: 'Stranica nije pronađena',
+    images: [{ url: '/og', width: 1200, height: 630, alt: 'Art Rabic' }],
+  },
+};
 
 export default function NotFound() {
   return (

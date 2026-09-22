@@ -1,13 +1,24 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import JsonLd from '@/components/seo/JsonLd';
+import { breadcrumbLd, buildMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Pravila korištenja | Art Rabic',
-  description: 'Pravila korištenja i politika privatnosti web stranice Art Rabic.',
-};
+export const metadata: Metadata = buildMetadata({
+  title: 'Pravila korištenja',
+  description:
+    'Pravila korištenja i politika privatnosti stranice mikulicknjige.com — koji se podaci prikupljaju pri narudžbi, kako se koriste i kako otkazati newsletter.',
+  path: '/pravila-koristenja',
+});
 
 export default function PravilaKoristenjaPage() {
   return (
     <div className="bg-white min-h-screen pt-24">
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Početna', path: '/' },
+          { name: 'Pravila korištenja', path: '/pravila-koristenja' },
+        ])}
+      />
       <section className="bg-[url('/hero-kontakt.webp')] bg-cover bg-center py-14 sm:py-20 md:py-28 text-center px-4 sm:px-6 relative overflow-hidden">
         <div className="max-w-3xl mx-auto relative z-10">
           <div className="w-16 h-1 bg-brand-red mx-auto mb-8"></div>

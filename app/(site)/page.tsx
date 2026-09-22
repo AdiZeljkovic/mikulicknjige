@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
 import HeroEditorial from '@/components/home/HeroEditorial';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Art Rabic | Izdavačka kuća Sarajevo',
-  description: 'Art Rabic – izdavačka kuća Gorana Mikulića. 28 godina afirmacije kulturnog nasljeđa BiH kroz kvalitetna izdanja, monografije i knjige.',
-  openGraph: {
-    title: 'Art Rabic | Izdavačka kuća Sarajevo',
-    description: 'Art Rabic – 28 godina afirmacije kulturnog nasljeđa BiH kroz kvalitetna izdanja i monografije.',
-  },
-};
+export const metadata: Metadata = buildMetadata({
+  title: 'Art Rabic | Izdavačka kuća iz Sarajeva',
+  description:
+    'Art Rabic – izdavačka kuća Gorana Mikulića. Preko 160 naslova: monografije, historija Sarajeva i BiH, eseji i umjetnost. Naručite online uz dostavu pouzećem.',
+  path: '/',
+  // Naslov već sadrži brend — bez ovoga bi ispalo „… | Art Rabic | Art Rabic".
+  absoluteTitle: true,
+});
 import LatestReleases from '@/components/home/LatestReleases';
 import FeaturedBook from '@/components/home/FeaturedBook';
 import BenefitsBar from '@/components/home/BenefitsBar';
