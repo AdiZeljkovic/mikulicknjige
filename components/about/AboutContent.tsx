@@ -90,7 +90,7 @@ export default function AboutContent() {
       {/* 3. Legacy and Acclaim */}
       <section className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 item-start">
-          <div className="prose prose-lg prose-headings:font-serif prose-headings:text-graphite prose-p:text-muted">
+          <div>
             <h3 className="text-2xl font-bold mb-4">Reprezentativna Izdanja</h3>
             <p>
               Najmonumentalnije je faksimilno izdanje čuvene <strong>„Sarajevske Hagade“</strong>, koja je ne samo vrhunski izdavački projekt, prepoznat i nagrađivan od struke na svjetskim sajmovima knjiga, nego je promocijama u svjetskim kulturnim metropolama podigla ugled naše sredine u svijetu.

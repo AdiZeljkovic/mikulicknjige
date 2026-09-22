@@ -10,10 +10,9 @@ Web stranica i katalog izdavačke kuće **Art Rabic** iz Sarajeva. Posjetioci pr
 - [Struktura projekta](#struktura-projekta)
 - [Lokalno pokretanje](#lokalno-pokretanje)
 - [Baza podataka](#baza-podataka)
-- [Uvoz kataloga knjiga](#uvoz-kataloga-knjiga)
+- [Katalog knjiga i slike](#katalog-knjiga-i-slike)
 - [Environment varijable](#environment-varijable)
 - [Deployment](#deployment)
-- [Nginx i HestiaCP](#nginx-i-hestiacp)
 - [Backup](#backup)
 - [Sigurnost](#sigurnost)
 - [Održavanje](#održavanje)
@@ -27,13 +26,13 @@ Web stranica i katalog izdavačke kuće **Art Rabic** iz Sarajeva. Posjetioci pr
 | Framework | Next.js 15 (App Router, React Server Components) |
 | UI | React 19, Tailwind CSS v4, Motion |
 | Jezik | TypeScript (strict) |
-| Baza | MariaDB / MySQL |
+| Baza | MariaDB 11 |
 | ORM | Prisma 7 sa `@prisma/adapter-mariadb` |
 | Autentikacija | HMAC-SHA256 potpisan cookie, bcrypt (cost 12) |
 | Email | Nodemailer preko SMTP-a |
-| Proces | PM2 (fork mode) iza nginx reverse proxyja |
+| Produkcija | Docker Compose (app + db) preko Dokployja |
 
-Build koristi `output: 'standalone'` — produkcijski server je samostalan `node` proces bez `npm`/`next` omotača, što štedi oko 200 MB memorije.
+Build koristi `output: 'standalone'` — produkcijski server je samostalan `node` proces bez `npm`/`next` omotača. To nije kozmetika: `next start` drži cijeli `node_modules` (1,1 GB) u memoriji, mjereno ~490 MiB RSS, dok standalone nosi samo trace-ovane module i radi na ~130 MiB.
 
 ---
 
@@ -64,17 +63,29 @@ prisma/
   migrations/          Migracije
   seed.ts              Kategorije, demo knjige, admin nalog
 scripts/
-  import-books.js      Parser starih HTML stranica → books-import.sql
   optimize-images.js   Pre-optimizacija korica (jpg → webp, max 800px)
-deploy/hestia/         Nginx template za HestiaCP
+Dockerfile             Produkcijski image
+docker-compose.yml     app + MariaDB, deploya se preko Dokployja
+.dockerignore
 books-import.sql       167 knjiga spremnih za uvoz
-ecosystem.config.js    PM2 konfiguracija
-deploy.sh              Deploy sa backupom, health checkom i rollbackom
+migrate-image-paths.sql  Jednokratna migracija putanja nakon jpg → webp
 ```
 
 ### Zašto route grupa `(site)`
 
-Root layout ne smije pozivati `headers()` — taj poziv forsira dinamički rendering **cijelog** stabla ruta i poništava `revalidate` na svakoj stranici. Zato su Header i Footer premješteni u `app/(site)/layout.tsx`, a root layout drži samo `<html>`, `<body>` i fontove. Time početna i katalog rade kao ISR i ne pogađaju bazu pri svakom zahtjevu.
+Root layout ne smije pozivati `headers()` — taj poziv forsira dinamički rendering **cijelog** stabla ruta i poništava `revalidate` na svakoj stranici. Zato su Header i Footer premješteni u `app/(site)/layout.tsx`, a root layout drži samo `<html>`, `<body>` i fontove.
+
+### Kako se šta renderuje
+
+| Stranica | Režim | Zašto |
+|---|---|---|
+| Početna, `/knjige` | `force-dynamic` | Baza ne postoji dok se image gradi. Prazan katalog keširan sat vremena bio bi gori od jednog upita po posjeti. |
+| `/knjige/[id]` | ISR, `revalidate = 3600` | `generateStaticParams` hvata grešku ako baza nije dostupna i pada na on-demand generisanje. |
+| Statične stranice | Statički | Nemaju upita na bazu. |
+
+### Originalni skenovi
+
+Visokorezolucijski originali korica (105 MB) **nisu u ovom repozitoriju** — stoje u `../originali-korica/` pored projekta. U repou su samo izvedene WebP verzije. Detalji u `originali-korica/PROCITAJ.md`.
 
 ---
 
@@ -107,13 +118,22 @@ npm run dev
 
 Aplikacija radi na `http://localhost:3000`.
 
+> Lokalno `DATABASE_URL` ide na `127.0.0.1`, a u Dockeru na ime `db` servisa — app kontejner ima vlastiti loopback.
+
+### Cijeli stack lokalno
+
+```bash
+DB_PASSWORD=test DB_ROOT_PASSWORD=test COOKIE_SECRET=$(openssl rand -hex 32) \
+  docker compose up --build
+```
+
 ### Skripte
 
 | Komanda | Opis |
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` | Produkcijski build |
-| `npm start` | Pokreće build |
+| `npm start` | Pokreće build (**ne koristi se u produkciji**, vidi Deployment) |
 | `npm run lint` | ESLint |
 | `npx tsc --noEmit` | Provjera tipova |
 
@@ -131,10 +151,9 @@ Category 1──n Book 1──n Order
 
 ### Migracije
 
-```bash
-# Produkcija — primijeni postojeće migracije
-npx prisma migrate deploy
+U produkciji se pokreću **automatski pri svakom bootu kontejnera** (`prisma migrate deploy` u `CMD`) — idempotentno je, pa ponovni start ne radi ništa.
 
+```bash
 # Development — kreiraj novu nakon izmjene schema.prisma
 npx prisma migrate dev --name opis_izmjene
 ```
@@ -146,29 +165,25 @@ Prisma 7 čita `DATABASE_URL` iz `prisma.config.ts`, **ne** iz `datasource` blok
 Kreira kategorije, demo knjige i admin nalog:
 
 ```bash
+# lokalno
 ADMIN_PASSWORD='jaka-lozinka-min-16-znakova' npx prisma db seed
+
+# u kontejneru
+docker compose exec -e ADMIN_PASSWORD='jaka-lozinka-min-16-znakova' app npx prisma db seed
 ```
 
-Seed odbija raditi ako je `ADMIN_PASSWORD` kraća od 16 znakova. Korisničko ime se postavlja preko `ADMIN_USERNAME` (default `admin`).
+Seed odbija raditi ako je `ADMIN_PASSWORD` kraća od 16 znakova. Korisničko ime se postavlja preko `ADMIN_USERNAME` (default `admin`). Proslijedi ih inline uz komandu — ne ostavljaj ih u `.env`.
 
 > Na MySQL-u pod Linuxom imena tabela su **case-sensitive** — tabela je `Book`, ne `book`. Ručni SQL mora poštovati tačan zapis.
 
 ---
 
-## Uvoz kataloga knjiga
+## Katalog knjiga i slike
 
-Repo sadrži `books-import.sql` sa 167 knjiga (naslov, autor, cijena, opis, putanja do korice). Slike su u `public/images/knjige/` i verzionisane su u gitu.
-
-```bash
-mysql -u KORISNIK -p BAZA < books-import.sql
-```
-
-### Ponovna generacija iz HTML izvora
-
-`scripts/import-books.js` parsira staru statičku stranicu (folder `mikulicknjige/` sa `knjigaN.html`), kopira slike u `public/images/knjige/` i generiše SQL:
+`books-import.sql` sadrži 167 knjiga (naslov, autor, cijena, opis, putanja do korice). Slike su u `public/images/knjige/` i verzionisane su u gitu.
 
 ```bash
-node scripts/import-books.js
+docker compose exec -T db mysql -u mikulic -p mikulic < books-import.sql
 ```
 
 > **SQL nije idempotentan.** `Book` nema unique constraint na naslovu, a `isbn` je `NULL` za sve uvezene knjige — ponovno pokretanje duplira cijeli katalog. Prije ponovnog uvoza očisti:
@@ -186,155 +201,71 @@ UPDATE `Book` SET categoryId = (SELECT id FROM Category WHERE slug='kultura') WH
 
 Korice u repou su već pre-optimizovane: WebP, maksimalno 800 px širine, ukupno oko 12 MB. **To nije kozmetika nego uslov da aplikacija radi.**
 
-Originalni skenovi bili su 93 MB — Next.js ih optimizuje on-demand preko sharpa, što je 60–90 MB RAM-a i do 2,4 s CPU-a **po slici**. Sa 165 korica na jednoj stranici proces bi probio PM2 memorijski limit, ušao u restart petlju i nakon deset ciklusa se ugasio.
+Originalni skenovi bili su 105 MB — Next.js ih optimizuje on-demand preko sharpa, što je 60–90 MB RAM-a i do 2,4 s CPU-a **po slici**. Sa 165 korica na jednoj stranici proces bi probio memorijski limit kontejnera i ušao u restart petlju.
 
-Nakon dodavanja novih originalnih skenova pokreni:
+Nakon dodavanja nove korice:
 
 ```bash
+# kopiju originala stavi u public/images/knjige/, pa:
 node scripts/optimize-images.js
-mysql -u KORISNIK -p BAZA < migrate-image-paths.sql   # ako baza već ima stare putanje
 ```
 
-Skripta usput popravlja slike sa oštećenim scan segmentima. Jedna korica (*Obična žena*, Hana Konsa) bila je nepovratno oštećena i nema sliku — treba je ponovo skenirati.
+Skripta radi **u mjestu**: konvertuje u WebP i **briše izvorni JPG/PNG**, pa u nju nikad ne ide jedini original. Usput popravlja slike sa oštećenim scan segmentima i generiše `migrate-image-paths.sql` za baze koje već imaju stare putanje.
+
+Korica za *Obična žena* (Hana Konsa) nepovratno je oštećena i nema sliku — treba je ponovo skenirati.
 
 ---
 
 ## Environment varijable
 
-Kompletna lista sa objašnjenjima je u [`.env.example`](.env.example). Sažetak:
+Kompletna lista sa objašnjenjima je u [`.env.example`](.env.example). U produkciji ih postavlja **Dokploy** kroz compose environment — nikad se ne commituju.
 
 | Varijabla | Obavezna | Napomena |
 |---|:---:|---|
-| `DATABASE_URL` | da | `mysql://korisnik:lozinka@127.0.0.1:3306/baza` |
+| `DATABASE_URL` | da | U Dockeru host je `db`, ne `127.0.0.1` |
 | `COOKIE_SECRET` | da | `openssl rand -hex 32`. Bez nje svaki login vraća 500 |
-| `NODE_ENV` | da | `production` na serveru — kontroliše `secure` flag na cookieju |
-| `PORT` | ne | Default 3000; na produkciji 3006 |
-| `HOSTNAME` | ne | `127.0.0.1` — app sluša samo loopback, nginx je ispred |
-| `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASS` | ne | Bez njih se email ne šalje, ali narudžbe rade |
+| `DB_PASSWORD` `DB_ROOT_PASSWORD` | da | Čita ih `docker-compose.yml` |
+| `NODE_ENV` | da | `production` — kontroliše `secure` flag na cookieju |
+| `PORT` | ne | `3006` u imageu |
+| `HOSTNAME` | ne | **`0.0.0.0` u kontejneru** — sa `127.0.0.1` je app nedostupna proxyju |
+| `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASS` | ne | Bez njih se email ne šalje, ali narudžbe se i dalje spremaju |
 | `SMTP_FROM` `ADMIN_EMAIL` | ne | Postavi eksplicitno — fallback koristi drugi domen i završi u spamu |
-| `ADMIN_PASSWORD` `ADMIN_USERNAME` | ne | Samo za seed, ukloni nakon toga |
+| `ADMIN_PASSWORD` `ADMIN_USERNAME` | ne | Samo za seed, proslijedi inline |
 
-`.env` je u `.gitignore` i nikad se ne commituje. Na serveru postavi `chmod 600 .env`.
+`.env` je u `.gitignore` i nikad se ne commituje.
 
 ---
 
 ## Deployment
 
-Cilj: Linux VPS sa Node.js 20+, MariaDB, nginx i PM2.
+Produkcija radi na **Dokployju** — compose se povlači iz gita, secreti dolaze iz Dokploy environmenta.
 
-### Prvo postavljanje
+Deploy je `git push` na `main` pa redeploy u Dokployju. Image se gradi iz `Dockerfile`-a, a kontejner pri bootu sam pokrene migracije.
 
-```bash
-cd /putanja/do/web/mikulicknjige.com
-git clone https://github.com/AdiZeljkovic/mikulicknjige.git app
-cd app
+### Šta Dockerfile radi i zašto
 
-cp .env.example .env && nano .env && chmod 600 .env
+- `npm ci` instalira **i devDeps** — build treba tailwind i tsx, a `tsx`/`prisma` ostaju dostupni u runtimeu za `migrate deploy` i seed
+- Build dobija lažni `DATABASE_URL`, scope-ovan na taj jedan `RUN`. `lib/prisma.ts` baca grešku pri importu ako varijabla fali, a `next build` importuje API rute dok skuplja page data. Lažna vrijednost se **ne** peče u image.
+- `public/` i `.next/static/` se kopiraju u `.next/standalone/` — Next ih namjerno ne uključuje (CDN use-case). Bez toga sajt radi, ali bez ijednog CSS-a, JS-a i slike.
+- `NODE_OPTIONS=--max-old-space-size=384` kapira V8 heap; dovoljno široko za ISR bursteve, dovoljno usko da RAM ne puzi
+- `CMD` pokreće `node .next/standalone/server.js`, **ne** `npm start`
 
-npm ci
-npx prisma generate
-npx prisma migrate deploy
-mysql -u KORISNIK -p BAZA < books-import.sql
-ADMIN_PASSWORD='jaka-lozinka' ADMIN_USERNAME='artrabica' npx prisma db seed
+### Jedna instanca je namjerna
 
-npm run build
-cp -r public .next/standalone/public
-cp -r .next/static .next/standalone/.next/static
+- Rate limiter drži brojače u memoriji procesa — sa više replika napadač dobija višestruko pokušaja
+- Prisma otvara connection pool po procesu (limit 5); više instanci množi konekcije
 
-pm2 start ecosystem.config.js --env production
-pm2 save
-pm2 startup    # ispiše sudo komandu — izvrši je da app preživi reboot
-```
+Ako aplikacija ikad ide na više replika, rate limiter mora prvo preći u dijeljeni store (Redis).
 
-### Naredni deployi
+### Reverse proxy
 
-```bash
-cd /putanja/do/app
-./deploy.sh
-```
-
-`deploy.sh` radi backup baze, `git pull --ff-only`, `npm ci`, `prisma migrate deploy`, build, PM2 reload i health check. **Ako build ili health check padne, automatski vraća prethodni commit** — stara verzija ostaje živa.
-
-Konfiguracija se pregazi preko `deploy.conf` pored skripte ili environmenta:
-
-```bash
-APP_DIR=/home/korisnik/web/mikulicknjige.com/app DB_NAME=moja_baza ./deploy.sh
-```
-
-### Build na serveru
-
-Build koristi 2–4 GB RAM-a. Ako server dijeli resurse sa drugim aplikacijama, provjeri swap prije prvog deploya:
-
-```bash
-free -h && swapon --show
-```
-
-Ako swapa nema:
-
-```bash
-fallocate -l 4G /swapfile && chmod 600 /swapfile
-mkswap /swapfile && swapon /swapfile
-echo '/swapfile none swap sw 0 0' >> /etc/fstab
-```
-
-Deploy sa sniženim prioritetom da ne guši ostale servise:
-
-```bash
-nice -n 19 ionice -c3 ./deploy.sh
-```
-
-### PM2
-
-Fork mode sa jednom instancom je namjeran, ne propust:
-
-- Rate limiter drži brojače u memoriji procesa — sa 4 workera napadač dobija 4× pokušaja
-- Prisma otvara connection pool po procesu; više instanci množi konekcije na dijeljenoj bazi
-- Stranice su ISR-keširane, pa CPU nije usko grlo
-
-Log rotacija (bez nje logovi rastu neograničeno):
-
-```bash
-pm2 install pm2-logrotate
-pm2 set pm2-logrotate:max_size 10M
-pm2 set pm2-logrotate:retain 7
-pm2 set pm2-logrotate:compress true
-```
-
----
-
-## Nginx i HestiaCP
-
-Aplikacija sluša na `127.0.0.1:3006`; nginx terminira TLS i proksira.
-
-**HestiaCP regeneriše `/etc/nginx/conf.d/domains/*.conf` iz templatea pri svakom SAVE u panelu.** Ručne izmjene tog fajla nestaju i sajt pada na 502. Zato koristi vlastiti template iz `deploy/hestia/`:
-
-```bash
-cp deploy/hestia/NodeApp3006.* /usr/local/hestia/data/templates/web/nginx/
-chown root:root /usr/local/hestia/data/templates/web/nginx/NodeApp3006.*
-chmod 644 /usr/local/hestia/data/templates/web/nginx/NodeApp3006.*
-
-v-change-web-domain-tpl KORISNIK mikulicknjige.com NodeApp3006 yes
-nginx -t && systemctl reload nginx
-```
-
-Template pokriva HSTS, gzip, direktno serviranje `/_next/static/` i `/images/` sa diska (bez prolaska kroz Node), proxy timeoute i blokadu pristupa `.env` i `.git`.
-
-Bez HestiaCP dovoljna je standardna proxy konfiguracija:
+Traefik (preko Dokployja) terminira TLS i prosljeđuje na port 3006. Ako se ikad postavlja ručni nginx:
 
 ```nginx
-location / {
-    proxy_pass http://127.0.0.1:3006;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $remote_addr;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_cache_bypass $http_upgrade;
-}
+proxy_set_header X-Forwarded-For $remote_addr;
 ```
 
-> `X-Forwarded-For $remote_addr`, a ne `$proxy_add_x_forwarded_for` — druga varijanta zadržava vrijednost koju je poslao klijent i otvara zaobilaženje rate limita.
+> `$remote_addr`, a ne `$proxy_add_x_forwarded_for` — druga varijanta zadržava vrijednost koju je poslao klijent i otvara zaobilaženje rate limita. `lib/ip.ts` čita zadnji unos lanca upravo zato.
 
 ---
 
@@ -342,34 +273,24 @@ location / {
 
 Narudžbe, kontakt poruke i newsletter pretplatnici postoje **samo** u bazi. Knjige se mogu vratiti iz `books-import.sql`, narudžbe kupaca ne mogu.
 
-`~/.my.cnf` (da lozinka ne bude u crontabu):
-
-```ini
-[client]
-user=KORISNIK
-password=LOZINKA
-host=127.0.0.1
-```
+Podaci baze žive u `db_data` Docker volumeu. Dnevni dump:
 
 ```bash
-chmod 600 ~/.my.cnf
-```
-
-Dnevni backup:
-
-```bash
-17 3 * * * mysqldump --defaults-file=$HOME/.my.cnf --single-transaction --quick \
-  --default-character-set=utf8mb4 BAZA | gzip -9 > $HOME/backups/mikulicknjige/$(date +\%F).sql.gz
+docker compose exec -T db mysqldump --single-transaction --quick \
+  --default-character-set=utf8mb4 -u root -p"$DB_ROOT_PASSWORD" mikulic \
+  | gzip -9 > ~/backups/mikulicknjige/$(date +%F).sql.gz
 ```
 
 Testiraj restore prije nego zatreba:
 
 ```bash
-mysql -e "CREATE DATABASE test_restore;"
-gunzip < ~/backups/mikulicknjige/*.sql.gz | mysql test_restore
-mysql test_restore -e "SELECT COUNT(*) FROM \`Book\`;"
-mysql -e "DROP DATABASE test_restore;"
+docker compose exec -T db mysql -u root -p"$DB_ROOT_PASSWORD" -e "CREATE DATABASE test_restore;"
+gunzip < ~/backups/mikulicknjige/*.sql.gz | docker compose exec -T db mysql -u root -p"$DB_ROOT_PASSWORD" test_restore
+docker compose exec -T db mysql -u root -p"$DB_ROOT_PASSWORD" test_restore -e "SELECT COUNT(*) FROM \`Book\`;"
+docker compose exec -T db mysql -u root -p"$DB_ROOT_PASSWORD" -e "DROP DATABASE test_restore;"
 ```
+
+> Volume preživi `docker compose down`, ali **ne** `docker compose down -v`. Ta zastavica briše narudžbe.
 
 ---
 
@@ -381,17 +302,18 @@ Implementirano:
 - Admin sesija: HMAC-SHA256 potpisan cookie, `httpOnly` + `sameSite=strict` + `secure`
 - Dvostruka zaštita admin ruta — middleware i provjera u `app/admin/layout.tsx`
 - Rate limiting: login 5/15min, narudžbe 5/h, kontakt 3/h, newsletter 5/h po IP
-- Stvarni IP se čita iz zadnjeg unosa `X-Forwarded-For` lanca (onog koji upisuje nginx)
+- Stvarni IP se čita iz zadnjeg unosa `X-Forwarded-For` lanca (onog koji upisuje proxy)
 - bcrypt cost 12; `bcrypt.compare` se izvršava i za nepostojećeg korisnika (timing)
 - Escape korisničkog unosa u HTML email templateima
 - Validacija dužine svih polja prema kolonama baze
 - Sigurnosni headeri: HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, CSP (report-only)
 - Nema `dangerouslySetInnerHTML`, nema raw SQL-a, nema mass assignmenta
 
-Preporuke za produkciju:
+Otvoreno:
 
-- Aplikacijski MySQL nalog treba imati samo `SELECT, INSERT, UPDATE, DELETE` na svojoj bazi — nikad `root`
-- Nakon što CSP odstoji sedmicu bez blokada u konzoli, prebaci `Content-Security-Policy-Report-Only` u `Content-Security-Policy` u `next.config.ts`
+- **CSP je još `Report-Only`** i pušta `unsafe-eval`. Nakon što odstoji sedmicu bez blokada u konzoli, prebaci u `Content-Security-Policy` u `next.config.ts` i skini `unsafe-eval`.
+- **Admin token nema revokaciju.** Logout briše cookie, ali sam token ostaje kriptografski validan do isteka od 7 dana. Presretnut token se ne može poništiti bez rotacije `COOKIE_SECRET`, što odjavljuje sve.
+- `npm audit` i dalje prijavljuje ranjivosti u tranzitivnim paketima koje Next povlači. Prate se uz redovni `npm audit fix` — **bez `--force`**, jer bi taj potez oborio Prismu sa 7 na 6.
 - Provjeri da u `AdminUser` nema zaostalih naloga: `SELECT username, lastLoginAt FROM AdminUser;`
 
 ---
@@ -404,25 +326,19 @@ Preporuke za produkciju:
 
 ### Dodavanje knjige
 
-Slike idu u `public/images/knjige/` i commituju se u git. U admin formi upiši putanju `/images/knjige/naziv.jpg` — eksterni URL se odbija jer bi srušio render.
+Slike idu u `public/images/knjige/` i commituju se u git. U admin formi upiši putanju `/images/knjige/naziv.webp` — eksterni URL se odbija jer bi srušio render.
 
 ### Uptime provjera
 
-PM2 restartuje proces koji umre, ali ne i onaj koji visi. Minimalna provjera svakih 5 minuta:
-
-```bash
-*/5 * * * * curl -sf --max-time 15 https://mikulicknjige.com/ > /dev/null || pm2 reload mikulicknjige
-```
-
-Za obavijesti izvana preporučuje se vanjski monitor (npr. UptimeRobot) — hvata i slučaj kad je cijeli server nedostupan.
+Docker restartuje kontejner koji umre, ali ne i onaj koji visi. Vanjski monitor (npr. UptimeRobot) hvata i slučaj kad je cijeli server nedostupan.
 
 ### Dijagnostika
 
 ```bash
-pm2 status
-pm2 logs mikulicknjige --lines 50
-ss -tlnp | grep 3006
-nginx -t
+docker compose ps
+docker compose logs --tail 50 app
+docker compose logs --tail 50 db
+docker stats --no-stream
 ```
 
 ---

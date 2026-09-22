@@ -54,22 +54,14 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     // Serijalizuj sharp. Bez ovoga paralelne transformacije preko HTTP/2
-    // podignu RSS preko PM2 limita i proces uđe u restart petlju.
+    // podignu RSS preko memorijskog limita kontejnera i proces uđe u restart petlju.
     imgOptConcurrency: 1,
     imgOptTimeoutInSeconds: 10,
   },
+  // Dockerfile pokreće .next/standalone/server.js i kopira public/ i
+  // .next/static/ pokraj njega — standalone ih namjerno ne uključuje.
   output: 'standalone',
   transpilePackages: ['motion'],
-  webpack: (config, {dev}) => {
-    // HMR is disabled in AI Studio via DISABLE_HMR env var.
-    // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-    if (dev && process.env.DISABLE_HMR === 'true') {
-      config.watchOptions = {
-        ignored: /.*/,
-      };
-    }
-    return config;
-  },
 };
 
 export default nextConfig;
