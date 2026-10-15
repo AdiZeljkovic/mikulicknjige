@@ -4,6 +4,9 @@ export type BookUI = {
   author: string
   category: string
   price: string
+  // Brojčana cijena za račun (npr. ukupno sa dostavom). `price` je formatiran
+  // tekst sa tačkom za hiljade — parsiranje „3.800,00 KM" nazad u broj daje 3.8.
+  priceValue: number
   image: string
   description?: string
   isbn?: string
@@ -23,18 +26,22 @@ export function toId(raw: string): number | null {
   return Number.isInteger(n) && n > 0 ? n : null
 }
 
-export function formatPrice(price: unknown): string {
-  let num: number
-  if (price === null || price === undefined) return '0,00 KM'
-  if (typeof price === 'number') {
-    num = price
-  } else if (typeof price === 'object' && 'toNumber' in (price as object)) {
-    num = (price as { toNumber(): number }).toNumber()
-  } else {
-    num = parseFloat(String(price).replace(',', '.').replace(/[^0-9.]/g, ''))
+/** Prisma Decimal, broj ili string iz baze -> broj (NaN ako nije cijena). */
+function toNumber(price: unknown): number {
+  if (price === null || price === undefined) return NaN
+  if (typeof price === 'number') return price
+  if (typeof price === 'object' && 'toNumber' in (price as object)) {
+    return (price as { toNumber(): number }).toNumber()
   }
+  return parseFloat(String(price).replace(',', '.').replace(/[^0-9.]/g, ''))
+}
+
+export function formatPrice(price: unknown): string {
+  const num = toNumber(price)
   if (isNaN(num)) return '0,00 KM'
-  return `${num.toFixed(2).replace('.', ',')} KM`
+  // Bosanski format: tačka za hiljade, zarez za decimale — 3.800,00 KM
+  const [int, dec] = num.toFixed(2).split('.')
+  return `${int.replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${dec} KM`
 }
 
 export function bookToUI(book: {
@@ -56,6 +63,7 @@ export function bookToUI(book: {
     author: book.author,
     category: book.category?.title.toUpperCase() ?? '',
     price: formatPrice(book.price),
+    priceValue: toNumber(book.price) || 0,
     image: book.imageUrl || '/book-placeholder.svg',
     description: book.description ?? undefined,
     isbn: book.isbn ?? undefined,

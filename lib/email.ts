@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { formatPrice } from './format'
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'localhost',
@@ -69,9 +70,9 @@ export async function sendOrderConfirmation(order: OrderData, book: BookData) {
         <p>Vaša narudžba je primljena i bit će obrađena u najkraćem roku.</p>
         <table style="width:100%;border-collapse:collapse;margin:20px 0">
           <tr><td style="padding:8px 0;color:#666">Knjiga:</td><td style="padding:8px 0"><strong>${esc(book.title)}</strong> — ${esc(book.author)}</td></tr>
-          <tr><td style="padding:8px 0;color:#666">Cijena knjige:</td><td style="padding:8px 0">${Number(order.bookPrice).toFixed(2)} KM</td></tr>
-          <tr><td style="padding:8px 0;color:#666">Dostava:</td><td style="padding:8px 0">${Number(order.deliveryFee).toFixed(2)} KM</td></tr>
-          <tr style="border-top:1px solid #eee"><td style="padding:8px 0;font-weight:bold">Ukupno:</td><td style="padding:8px 0;font-weight:bold">${Number(order.totalPrice).toFixed(2)} KM</td></tr>
+          <tr><td style="padding:8px 0;color:#666">Cijena knjige:</td><td style="padding:8px 0">${formatPrice(order.bookPrice)}</td></tr>
+          <tr><td style="padding:8px 0;color:#666">Dostava:</td><td style="padding:8px 0">${formatPrice(order.deliveryFee)}</td></tr>
+          <tr style="border-top:1px solid #eee"><td style="padding:8px 0;font-weight:bold">Ukupno:</td><td style="padding:8px 0;font-weight:bold">${formatPrice(order.totalPrice)}</td></tr>
         </table>
         <h3 style="margin-top:24px">Adresa dostave</h3>
         <p>${esc(order.firstName)} ${esc(order.lastName)}<br>${esc(order.address)}<br>${esc(order.zip)} ${esc(order.city)}<br>Tel: ${esc(order.phone)}</p>
@@ -98,7 +99,7 @@ export async function sendOrderNotification(order: OrderData, book: BookData) {
           <tr><td style="padding:6px 0;color:#666">Email:</td><td><a href="mailto:${esc(order.email)}">${esc(order.email)}</a></td></tr>
           <tr><td style="padding:6px 0;color:#666">Telefon:</td><td>${esc(order.phone)}</td></tr>
           <tr><td style="padding:6px 0;color:#666">Adresa:</td><td>${esc(order.address)}, ${esc(order.zip)} ${esc(order.city)}</td></tr>
-          <tr><td style="padding:6px 0;color:#666">Ukupno:</td><td><strong>${Number(order.totalPrice).toFixed(2)} KM</strong></td></tr>
+          <tr><td style="padding:6px 0;color:#666">Ukupno:</td><td><strong>${formatPrice(order.totalPrice)}</strong></td></tr>
           ${order.note ? `<tr><td style="padding:6px 0;color:#666">Napomena:</td><td>${esc(order.note)}</td></tr>` : ''}
         </table>
       </div>

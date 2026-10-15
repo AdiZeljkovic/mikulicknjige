@@ -4,15 +4,14 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
-import type { BookUI } from '@/lib/format';
+import { formatPrice, type BookUI } from '@/lib/format';
 
 export default function CheckoutContent({ book }: { book: BookUI }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  const priceNum = parseFloat(book.price.replace(',', '.').replace(' KM', ''));
-  const total = (priceNum + 7).toFixed(2).replace('.', ',') + ' KM';
+  const total = formatPrice(book.priceValue + 7);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
