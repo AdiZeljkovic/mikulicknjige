@@ -1,0 +1,12 @@
+# Lokalni override za Docker Desktop. Produkcija (Dokploy) ga NE koristi —
+# učitava se samo eksplicitno:
+#   docker compose -p mikulicknjige --env-file .env.docker -f docker-compose.yml -f docker-compose.local.yml up -d --build
+services:
+  app:
+    ports:
+      - "3006:3006"
+
+  db:
+    # Za `npm run dev` ili DB klijent sa hosta: mysql://mikulic:<DB_PASSWORD>@127.0.0.1:3307/mikulic
+    ports:
+      - "3307:3306"
