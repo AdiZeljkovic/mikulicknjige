@@ -2,10 +2,12 @@ import type { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 import { absoluteUrl } from '@/lib/seo'
 
-// Keširaj na sat vremena. Zaštitu od pada builda kad baza nije dostupna
-// pruža try/catch ispod, ne `force-dynamic` — koji bi ovdje samo značio
-// jedan upit u bazu po svakom crawleru.
-export const revalidate = 3600
+// Slaže se pri svakom zahtjevu. Sa `revalidate = 3600` Next je sitemap
+// napravio jednom, u Docker buildu gdje baze nema, i taj prazan (samo 7
+// statičnih adresa, nijedna knjiga) služio zauvijek — nikad se nije obnovio.
+// Cijena je jedan mali upit u bazu kad crawler dođe po sitemap. try/catch
+// ispod i dalje čuva sajt ako baza zakaže.
+export const dynamic = 'force-dynamic'
 
 // Statične stranice se mijenjaju samo kad neko izmijeni kod. Ranije je ovdje
 // stajao `new Date()`, pa je svaka regeneracija sitemapa javljala Googleu da

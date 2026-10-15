@@ -10,6 +10,9 @@ services:
       MARIADB_USER: mikulic
       MARIADB_PASSWORD: ${DB_PASSWORD}
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    # Limits live here so they survive every redeploy (set by hand they were
+    # lost each time the container was recreated)
+    mem_limit: 256m
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -22,6 +25,8 @@ services:
     build:
       context: .
     restart: unless-stopped
+    # Above the Node heap cap in the Dockerfile; equal to it would mean OOM kills
+    mem_limit: 512m
     environment:
       DATABASE_URL: mysql://mikulic:${DB_PASSWORD}@db:3306/mikulic
       COOKIE_SECRET: ${COOKIE_SECRET}
