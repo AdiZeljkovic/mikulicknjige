@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import OrderStatusForm from './OrderStatusForm';
+import PaymentPaidForm from './PaymentPaidForm';
+import { PAYMENT_LABELS } from '@/lib/placanje';
 
 export default async function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -58,8 +60,17 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
             <div className="flex justify-between"><dt className="text-gray-500">Cijena knjige:</dt><dd className="text-graphite">{formatPrice(order.bookPrice)}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Dostava:</dt><dd className="text-graphite">{formatPrice(order.deliveryFee)}</dd></div>
             <div className="flex justify-between font-semibold text-base pt-2 border-t border-gray-100"><dt className="text-graphite">Ukupno:</dt><dd className="text-brand-red">{formatPrice(order.totalPrice)}</dd></div>
+            <div className="flex justify-between pt-2"><dt className="text-gray-500">Plaćanje:</dt><dd className="text-graphite font-medium">{PAYMENT_LABELS[order.paymentMethod]}</dd></div>
           </dl>
         </div>
+
+        {order.paymentMethod === 'UPLATA' && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 md:col-span-2">
+            <h2 className="font-semibold text-graphite mb-1">Uplata na račun</h2>
+            <p className="text-sm text-gray-500 mb-4">Svrha uplate koju kupac navodi: &bdquo;Narudžba knjige #{order.id}&ldquo;</p>
+            <PaymentPaidForm orderId={order.id} paidAt={order.paidAt ? order.paidAt.toISOString() : null} />
+          </div>
+        )}
 
         {/* Status Update */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 md:col-span-2">

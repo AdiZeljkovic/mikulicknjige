@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import { formatPrice } from './format'
+import { PAYMENT_LABELS, domaciRedovi, devizniRedovi, type PaymentMethod } from './placanje'
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'localhost',
@@ -44,7 +45,27 @@ type OrderData = {
   bookPrice: number
   deliveryFee: number
   totalPrice: number
+  paymentMethod?: PaymentMethod
   note?: string | null
+}
+
+function redoviHtml(redovi: [string, string][]) {
+  return redovi
+    .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#666;white-space:nowrap">${esc(k)}:</td><td style="padding:4px 0"><strong>${esc(v)}</strong></td></tr>`)
+    .join('')
+}
+
+/** Uputstvo za uplatu na račun — ide kupcu u potvrdi narudžbe. */
+function uplataHtml(order: OrderData) {
+  return `
+        <div style="margin-top:24px;padding:16px 20px;background:#f7f5f0;border-left:3px solid #c41e3a">
+          <h3 style="margin:0 0 8px">Uplata na račun</h3>
+          <p style="margin:0 0 12px;font-size:14px">Knjigu šaljemo čim uplata bude evidentirana. Kao svrhu uplate obavezno navedite broj narudžbe.</p>
+          <table style="border-collapse:collapse;font-size:14px">${redoviHtml(domaciRedovi(order.id, formatPrice(order.totalPrice)))}</table>
+          <h4 style="margin:16px 0 8px">Uplata iz inostranstva (EUR)</h4>
+          <table style="border-collapse:collapse;font-size:14px">${redoviHtml(devizniRedovi(order.id))}</table>
+          <p style="margin:12px 0 0;font-size:13px;color:#666">Za uplatu iz inostranstva iznos u eurima i troškove poštarine potvrđujemo vam e-mailom.</p>
+        </div>`
 }
 
 type BookData = {
@@ -77,7 +98,9 @@ export async function sendOrderConfirmation(order: OrderData, book: BookData) {
         <h3 style="margin-top:24px">Adresa dostave</h3>
         <p>${esc(order.firstName)} ${esc(order.lastName)}<br>${esc(order.address)}<br>${esc(order.zip)} ${esc(order.city)}<br>Tel: ${esc(order.phone)}</p>
         ${order.note ? `<p><strong>Napomena:</strong> ${esc(order.note)}</p>` : ''}
-        <p style="margin-top:24px;color:#666;font-size:14px">Plaćanje: pouzećem pri preuzimanju</p>
+        ${order.paymentMethod === 'UPLATA'
+          ? uplataHtml(order)
+          : `<p style="margin-top:24px;color:#666;font-size:14px">Plaćanje: pouzećem pri preuzimanju</p>`}
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
         <p style="color:#999;font-size:12px">Art Rabic — Zmaja od Bosne 4, Sarajevo | mikulicknjige.com</p>
       </div>
@@ -89,7 +112,7 @@ export async function sendOrderNotification(order: OrderData, book: BookData) {
   await transporter.sendMail({
     from: FROM,
     to: ADMIN,
-    subject: `Nova narudžba #${order.id}: ${book.title}`,
+    subject: `Nova narudžba #${order.id}${order.paymentMethod === 'UPLATA' ? ' (uplata na račun)' : ''}: ${book.title}`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
         <h2>Nova narudžba #${order.id}</h2>
@@ -100,6 +123,7 @@ export async function sendOrderNotification(order: OrderData, book: BookData) {
           <tr><td style="padding:6px 0;color:#666">Telefon:</td><td>${esc(order.phone)}</td></tr>
           <tr><td style="padding:6px 0;color:#666">Adresa:</td><td>${esc(order.address)}, ${esc(order.zip)} ${esc(order.city)}</td></tr>
           <tr><td style="padding:6px 0;color:#666">Ukupno:</td><td><strong>${formatPrice(order.totalPrice)}</strong></td></tr>
+          <tr><td style="padding:6px 0;color:#666">Plaćanje:</td><td><strong>${PAYMENT_LABELS[order.paymentMethod ?? 'POUZECE']}</strong>${order.paymentMethod === 'UPLATA' ? ' — knjigu poslati tek kad uplata stigne (svrha: narudžba #' + order.id + ')' : ''}</td></tr>
           ${order.note ? `<tr><td style="padding:6px 0;color:#666">Napomena:</td><td>${esc(order.note)}</td></tr>` : ''}
         </table>
       </div>

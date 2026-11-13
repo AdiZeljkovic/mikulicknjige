@@ -6,7 +6,7 @@ import { breadcrumbLd, absoluteUrl, buildMetadata, SITE } from '@/lib/seo';
 export const metadata: Metadata = buildMetadata({
   title: 'O kupovini',
   description:
-    'Kako naručiti knjige Art Rabica: plaćanje pouzećem, dostava BH Poštom za 7,00 KM širom BiH u roku 2–4 radna dana, lično preuzimanje u Sarajevu i uslovi povrata.',
+    'Kako naručiti knjige Art Rabica: plaćanje pouzećem ili uplatom na račun, dostava BH Poštom za 7,00 KM širom BiH u roku 2–4 radna dana, lično preuzimanje u Sarajevu i uslovi povrata.',
   path: '/o-kupovini',
 });
 
@@ -19,7 +19,7 @@ const faq = [
   },
   {
     q: 'Načini plaćanja',
-    a: 'Plaćanje se vrši pouzećem – gotovinom ili karticom pri preuzimanju pošiljke. Za institucije i pravna lica moguće je plaćanje putem računa (virmansko plaćanje) uz prethodni dogovor.',
+    a: 'Knjige možete platiti pouzećem – gotovinom ili karticom pri preuzimanju pošiljke – ili uplatom na račun. Ako izaberete uplatu na račun, podatke za uplatu dobijate odmah nakon narudžbe i e-mailom, a knjigu šaljemo kada uplata bude evidentirana. Uplata je moguća i iz inostranstva (EUR).',
   },
   {
     q: 'Dostava',
@@ -77,7 +77,7 @@ export default function OKupoviniPage() {
         <div>
           <h2 className="font-serif text-2xl text-graphite mb-4">Načini plaćanja</h2>
           <p className="text-muted leading-relaxed">
-            Plaćanje se vrši pouzećem – gotovinom ili karticom pri preuzimanju pošiljke. Za institucije i pravna lica moguće je plaćanje putem računa (virmansko plaćanje) uz prethodni dogovor.
+            Knjige možete platiti pouzećem – gotovinom ili karticom pri preuzimanju pošiljke – ili uplatom na račun. Ako izaberete uplatu na račun, podatke za uplatu dobijate odmah nakon narudžbe i e-mailom, a knjigu šaljemo kada uplata bude evidentirana. Uplata je moguća i iz inostranstva (EUR).
           </p>
         </div>
 

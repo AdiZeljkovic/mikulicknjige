@@ -80,7 +80,14 @@ export default async function AdminOrdersPage({
                       <p className="text-xs text-gray-500">{order.email}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-600 max-w-[180px] truncate">{order.book.title}</td>
-                    <td className="px-4 py-3 font-medium text-graphite">{formatPrice(order.totalPrice)}</td>
+                    <td className="px-4 py-3 font-medium text-graphite">
+                      {formatPrice(order.totalPrice)}
+                      {order.paymentMethod === 'UPLATA' && (
+                        <span className={`block text-xs font-normal ${order.paidAt ? 'text-green-700' : 'text-amber-700'}`}>
+                          {order.paidAt ? 'uplaćeno' : 'čeka uplatu'}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`inline-block text-xs font-medium px-2 py-1 rounded-full ${st.cls}`}>{st.label}</span>
                     </td>
