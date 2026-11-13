@@ -7,6 +7,8 @@ export type BookUI = {
   // Brojčana cijena za račun (npr. ukupno sa dostavom). `price` je formatiran
   // tekst sa tačkom za hiljade — parsiranje „3.800,00 KM" nazad u broj daje 3.8.
   priceValue: number
+  // Cijena za inostranstvo („15,00 €"), samo ako je knjiga ima.
+  priceEur?: string
   image: string
   description?: string
   isbn?: string
@@ -36,12 +38,23 @@ function toNumber(price: unknown): number {
   return parseFloat(String(price).replace(',', '.').replace(/[^0-9.]/g, ''))
 }
 
+// Bosanski format: tačka za hiljade, zarez za decimale — 3.800,00
+function formatAmount(num: number): string {
+  const [int, dec] = num.toFixed(2).split('.')
+  return `${int.replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${dec}`
+}
+
 export function formatPrice(price: unknown): string {
   const num = toNumber(price)
   if (isNaN(num)) return '0,00 KM'
-  // Bosanski format: tačka za hiljade, zarez za decimale — 3.800,00 KM
-  const [int, dec] = num.toFixed(2).split('.')
-  return `${int.replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${dec} KM`
+  return `${formatAmount(num)} KM`
+}
+
+/** Cijena u eurima — undefined kad je knjiga nema (null/prazno). */
+export function formatPriceEur(price: unknown): string | undefined {
+  const num = toNumber(price)
+  if (isNaN(num)) return undefined
+  return `${formatAmount(num)} €`
 }
 
 export function bookToUI(book: {
@@ -49,6 +62,7 @@ export function bookToUI(book: {
   title: string
   author: string
   price: unknown
+  priceEur?: unknown
   imageUrl?: string | null
   description?: string | null
   isbn?: string | null
@@ -64,6 +78,7 @@ export function bookToUI(book: {
     category: book.category?.title.toUpperCase() ?? '',
     price: formatPrice(book.price),
     priceValue: toNumber(book.price) || 0,
+    priceEur: formatPriceEur(book.priceEur),
     image: book.imageUrl || '/book-placeholder.svg',
     description: book.description ?? undefined,
     isbn: book.isbn ?? undefined,

@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { title, author, price, categoryId, imageUrl, description, isbn, pages, format, year, inStock, featured } = body
+    const { title, author, price, priceEur, categoryId, imageUrl, description, isbn, pages, format, year, inStock, featured } = body
 
     if (!String(title ?? '').trim() || !String(author ?? '').trim()) {
       return NextResponse.json({ error: 'Naslov i autor su obavezni' }, { status: 400 })
@@ -32,6 +32,13 @@ export async function POST(req: NextRequest) {
     const parsedPrice = parseFloat(price)
     if (price === undefined || price === null || price === '' || isNaN(parsedPrice) || parsedPrice < 0) {
       return NextResponse.json({ error: 'Nevažeća cijena' }, { status: 400 })
+    }
+
+    // Cijena u eurima je neobavezna: prazno = nema je.
+    const noEur = priceEur === undefined || priceEur === null || priceEur === ''
+    const parsedEur = noEur ? null : parseFloat(priceEur)
+    if (parsedEur !== null && (isNaN(parsedEur) || parsedEur < 0)) {
+      return NextResponse.json({ error: 'Nevažeća cijena u eurima' }, { status: 400 })
     }
 
     const cleanImageUrl = imageUrl ? String(imageUrl).trim() : ''
@@ -47,6 +54,7 @@ export async function POST(req: NextRequest) {
         title: String(title).trim().slice(0, 190),
         author: String(author).trim().slice(0, 190),
         price: parsedPrice,
+        priceEur: parsedEur,
         categoryId: categoryId ? parseInt(categoryId) : null,
         imageUrl: cleanImageUrl || null,
         description: description || null,

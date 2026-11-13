@@ -21,6 +21,9 @@ model Book {
   title       String
   author      String
   price       Decimal  @db.Decimal(8, 2)
+  // Cijena za inostranstvo u eurima. Nije preračun iz KM (izdavač je određuje
+  // posebno), pa je zasebno polje; prazno = prikazuje se samo cijena u KM.
+  priceEur    Decimal? @db.Decimal(8, 2)
   imageUrl    String?  @db.Text
   description String?  @db.Text
   isbn        String?  @unique

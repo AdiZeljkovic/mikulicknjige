@@ -21,7 +21,7 @@ export default async function BooksPage() {
   const dbBooks = await prisma.book.findMany({
     where: { inStock: true },
     select: {
-      id: true, title: true, author: true, price: true, imageUrl: true,
+      id: true, title: true, author: true, price: true, priceEur: true, imageUrl: true,
       category: { select: { title: true } },
     },
     orderBy: { createdAt: 'desc' },

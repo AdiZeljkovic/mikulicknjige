@@ -27,7 +27,7 @@ export default async function EditBookPage({ params }: { params: Promise<{ id: s
         <p className="text-gray-500 mt-1">{book.title}</p>
       </div>
       <div className="bg-white border border-gray-200 rounded-lg p-8">
-        <BookForm book={{ ...book, price: Number(book.price) }} categories={categories} />
+        <BookForm book={{ ...book, price: Number(book.price), priceEur: book.priceEur === null ? null : Number(book.priceEur) }} categories={categories} />
       </div>
     </div>
   );

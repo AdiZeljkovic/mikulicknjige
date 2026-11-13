@@ -32,7 +32,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const body = await req.json()
-    const { title, author, price, categoryId, imageUrl, description, isbn, pages, format, year, inStock, featured } = body
+    const { title, author, price, priceEur, categoryId, imageUrl, description, isbn, pages, format, year, inStock, featured } = body
 
     // Ažuriraj SAMO polja koja su stvarno poslana. Ranije je ovdje svako
     // izostavljeno polje bilo postavljeno na null, pa je uređivanje naslova
@@ -53,6 +53,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         return NextResponse.json({ error: 'Nevažeća cijena' }, { status: 400 })
       }
       data.price = parsed
+    }
+    if (priceEur !== undefined) {
+      // null ili prazno briše cijenu u eurima
+      if (priceEur === null || priceEur === '') {
+        data.priceEur = null
+      } else {
+        const parsed = parseFloat(priceEur)
+        if (isNaN(parsed) || parsed < 0) {
+          return NextResponse.json({ error: 'Nevažeća cijena u eurima' }, { status: 400 })
+        }
+        data.priceEur = parsed
+      }
     }
     if (imageUrl !== undefined) {
       const value = imageUrl ? String(imageUrl).trim() : ''

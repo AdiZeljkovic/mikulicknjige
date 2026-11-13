@@ -26,7 +26,7 @@ export default async function Home() {
     prisma.book.findMany({
       where: { inStock: true },
       select: {
-        id: true, title: true, author: true, price: true, imageUrl: true,
+        id: true, title: true, author: true, price: true, priceEur: true, imageUrl: true,
         category: { select: { title: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -35,7 +35,7 @@ export default async function Home() {
     prisma.book.findFirst({
       where: { featured: true },
       select: {
-        id: true, title: true, author: true, price: true, imageUrl: true,
+        id: true, title: true, author: true, price: true, priceEur: true, imageUrl: true,
         description: true, isbn: true, pages: true, format: true, year: true,
         category: { select: { title: true } },
       },

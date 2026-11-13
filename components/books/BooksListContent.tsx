@@ -50,7 +50,10 @@ export default function BooksListContent({ books }: { books: BookUI[] }) {
                 <p className="text-sm text-muted mb-5 tracking-wide">{book.author}</p>
 
                 <div className="mt-auto flex items-center justify-between">
-                  <span className="font-serif text-lg text-graphite">{book.price}</span>
+                  <span className="font-serif text-lg text-graphite">
+                    {book.price}
+                    {book.priceEur && <span className="text-muted text-base"> / {book.priceEur}</span>}
+                  </span>
                   <Link
                     href={`/knjige/${book.id}`}
                     className="text-xs font-bold tracking-widest uppercase text-brand-red hover:text-white px-4 py-2 border border-brand-red hover:bg-brand-red transition-colors"

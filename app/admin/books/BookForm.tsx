@@ -8,6 +8,7 @@ type BookData = {
   title?: string;
   author?: string;
   price?: string | number;
+  priceEur?: string | number | null;
   categoryId?: number | null;
   imageUrl?: string | null;
   description?: string | null;
@@ -44,6 +45,7 @@ export default function BookForm({ book, categories = [] }: { book?: BookData; c
       title: value('title'),
       author: value('author'),
       price: value('price'),
+      priceEur: value('priceEur') || null,
       categoryId: value('categoryId') || null,
       imageUrl: value('imageUrl') || null,
       description: value('description') || null,
@@ -98,6 +100,10 @@ export default function BookForm({ book, categories = [] }: { book?: BookData; c
         <div className="space-y-1">
           <label className={labelClass}>Cijena (KM) *</label>
           <input name="price" type="number" step="0.01" min="0" required defaultValue={priceValue} className={inputClass} />
+        </div>
+        <div className="space-y-1">
+          <label className={labelClass}>Cijena za inostranstvo (€)</label>
+          <input name="priceEur" type="number" step="0.01" min="0" defaultValue={book?.priceEur ?? ''} className={inputClass} placeholder="prazno = samo KM" />
         </div>
         <div className="sm:col-span-2 space-y-1">
           <label className={labelClass}>Kategorija</label>

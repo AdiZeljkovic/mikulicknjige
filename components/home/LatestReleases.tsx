@@ -65,7 +65,10 @@ export default function LatestReleases({ books }: { books: BookUI[] }) {
                 <p className="text-sm text-muted mb-4">{book.author}</p>
 
                 <div className="mt-auto flex items-center justify-between pt-4 border-t border-border-fine">
-                  <span className="font-semibold text-brand-red">{book.price}</span>
+                  <span className="font-semibold text-brand-red">
+                    {book.price}
+                    {book.priceEur && <span className="font-normal text-muted"> / {book.priceEur}</span>}
+                  </span>
                   <Link
                     href={`/knjige/${book.id}`}
                     className="w-11 h-11 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-paper hover:bg-brand-red hover:text-white text-graphite transition-colors border border-border-fine hover:border-brand-red"

@@ -81,6 +81,7 @@ export default function FeaturedBook({ book }: { book: BookUI | null }) {
             <div className="flex flex-col sm:flex-row sm:items-center gap-6 mt-4">
               <span className="font-serif text-3xl font-bold text-brand-red">
                 {book.price}
+                {book.priceEur && <span className="text-xl font-normal text-muted"> / {book.priceEur}</span>}
               </span>
 
               <div className="flex items-center gap-4">

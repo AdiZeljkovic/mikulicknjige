@@ -9,6 +9,7 @@ type Book = {
   author: string;
   category: string;
   price: string;
+  priceEur?: string;
   image: string;
   description?: string;
   isbn?: string;
@@ -78,8 +79,14 @@ export default function BookDetailContent({ book }: { book: Book }) {
             </div>
             
             <div className="mb-12">
-              <div className="flex items-center gap-8 mb-6">
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-6">
                 <span className="text-2xl sm:text-3xl md:text-4xl font-serif text-graphite">{book.price}</span>
+                {book.priceEur && (
+                  <span className="text-lg sm:text-xl md:text-2xl font-serif text-muted">
+                    / {book.priceEur}
+                    <span className="block sm:inline sm:ml-2 text-xs font-sans tracking-wide text-muted">za inostranstvo</span>
+                  </span>
+                )}
               </div>
               
               <Link 
