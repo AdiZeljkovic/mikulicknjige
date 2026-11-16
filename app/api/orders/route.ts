@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     const city = str(body?.city, 80)
     const zip = str(body?.zip, 20)
     const note = str(body?.note, 1000)
-    const paymentMethod = body?.paymentMethod === 'UPLATA' ? 'UPLATA' : 'POUZECE'
+    const paymentMethod = 'POUZECE' as const
 
     if (!firstName || !lastName || !email || !phone || !address || !city || !zip) {
       return NextResponse.json({ error: 'Sva obavezna polja moraju biti popunjena' }, { status: 400 })

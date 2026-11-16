@@ -5,27 +5,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { formatPrice, type BookUI } from '@/lib/format';
-import { domaciRedovi, devizniRedovi, type PaymentMethod } from '@/lib/placanje';
-
-function Redovi({ redovi }: { redovi: [string, string][] }) {
-  return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-      {redovi.map(([k, v]) => (
-        <div key={k} className="contents">
-          <dt className="text-muted">{k}</dt>
-          <dd className="text-graphite font-medium break-words">{v}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 export default function CheckoutContent({ book }: { book: BookUI }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [payment, setPayment] = useState<PaymentMethod>('POUZECE');
-  const [orderId, setOrderId] = useState<number | null>(null);
 
   const total = formatPrice(book.priceValue + 7);
 
@@ -44,7 +28,6 @@ export default function CheckoutContent({ book }: { book: BookUI }) {
       address: (form.querySelector('#address') as HTMLInputElement).value,
       city: (form.querySelector('#city') as HTMLInputElement).value,
       zip: (form.querySelector('#zip') as HTMLInputElement).value,
-      paymentMethod: payment,
     };
 
     try {
@@ -58,8 +41,6 @@ export default function CheckoutContent({ book }: { book: BookUI }) {
         setError(d.error || 'Došlo je do greške. Molimo pokušajte ponovo.');
         return;
       }
-      const created = await res.json().catch(() => null);
-      setOrderId(typeof created?.id === 'number' ? created.id : null);
       setIsSuccess(true);
       window.scrollTo({ top: 0 });
     } catch {
@@ -75,30 +56,10 @@ export default function CheckoutContent({ book }: { book: BookUI }) {
         <div className="max-w-xl mx-auto text-center">
           <CheckCircle2 className="w-20 h-20 text-brand-red mx-auto mb-8" strokeWidth={1} />
           <h1 className="text-4xl md:text-5xl font-serif text-graphite mb-6">Uspješna narudžba</h1>
-          {payment === 'UPLATA' && orderId ? (
-            <>
-              <p className="text-lg text-muted mb-8">
-                Zahvaljujemo na povjerenju. Vaša narudžba <strong>#{orderId}</strong> za knjigu <strong>{book.title}</strong> je zaprimljena.
-                Knjigu šaljemo čim uplata bude evidentirana. Podatke za uplatu poslali smo vam i e-mailom.
-              </p>
-              <div className="text-left bg-ivory border border-border-fine p-6 sm:p-8 mb-12 space-y-8">
-                <div>
-                  <h2 className="text-xs font-bold tracking-widest uppercase text-graphite mb-4">Uplata u BiH</h2>
-                  <Redovi redovi={domaciRedovi(orderId, total)} />
-                </div>
-                <div className="pt-6 border-t border-border-fine">
-                  <h2 className="text-xs font-bold tracking-widest uppercase text-graphite mb-4">Uplata iz inostranstva (EUR)</h2>
-                  <Redovi redovi={devizniRedovi(orderId)} />
-                  <p className="text-xs text-muted mt-4">Iznos u eurima i troškove poštarine za inostranstvo potvrđujemo vam e-mailom.</p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <p className="text-lg text-muted mb-12">
-              Zahvaljujemo na povjerenju. Vaša narudžba za knjigu <strong>{book.title}</strong> je uspješno zaprimljena.
-              Kontaktirat ćemo vas telefonom u roku od 24 sata radi potvrde i dogovora o dostavi.
-            </p>
-          )}
+          <p className="text-lg text-muted mb-12">
+            Zahvaljujemo na povjerenju. Vaša narudžba za knjigu <strong>{book.title}</strong> je uspješno zaprimljena.
+            Kontaktirat ćemo vas telefonom ili e-mailom u roku od 24 sata radi potvrde narudžbe i dogovora o dostavi.
+          </p>
           <Link
             href="/knjige"
             className="inline-flex items-center justify-center px-10 py-4 text-xs font-bold tracking-widest uppercase bg-graphite text-white hover:bg-black transition-colors"
@@ -209,32 +170,6 @@ export default function CheckoutContent({ book }: { book: BookUI }) {
                 </div>
               </div>
 
-              <fieldset className="space-y-3 pt-2">
-                <legend className="block text-xs font-bold tracking-widest uppercase text-muted mb-3">Način plaćanja</legend>
-                {([
-                  ['POUZECE', 'Pouzećem', 'Plaćate gotovinom ili karticom pri preuzimanju pošiljke.'],
-                  ['UPLATA', 'Uplata na račun', 'Nakon narudžbe dobijate podatke za uplatu; knjigu šaljemo kad uplata stigne.'],
-                ] as const).map(([value, label, desc]) => (
-                  <label
-                    key={value}
-                    className={`flex items-start gap-3 p-4 border cursor-pointer transition-colors ${payment === value ? 'border-brand-red bg-paper' : 'border-border-fine hover:border-graphite'}`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={value}
-                      checked={payment === value}
-                      onChange={() => setPayment(value)}
-                      className="mt-1 w-4 h-4 accent-brand-red"
-                    />
-                    <span>
-                      <span className="block text-sm font-medium text-graphite">{label}</span>
-                      <span className="block text-xs text-muted mt-1">{desc}</span>
-                    </span>
-                  </label>
-                ))}
-              </fieldset>
-
               {error && <p className="text-sm text-red-600">{error}</p>}
 
               <div className="pt-8">
@@ -246,9 +181,7 @@ export default function CheckoutContent({ book }: { book: BookUI }) {
                   {isSubmitting ? 'Obrada...' : 'Potvrdi narudžbu'}
                 </button>
                 <p className="text-center text-xs text-muted mt-4">
-                  {payment === 'UPLATA'
-                    ? 'Podatke za uplatu dobijate odmah nakon narudžbe i e-mailom.'
-                    : 'Plaćanje se vrši pouzećem prilikom preuzimanja pošiljke.'}
+                  Nakon narudžbe kontaktirat ćemo vas radi potvrde i dogovora o dostavi. Plaćanje se vrši pouzećem prilikom preuzimanja pošiljke.
                 </p>
               </div>
             </form>

@@ -6,7 +6,7 @@ import { breadcrumbLd, buildMetadata } from '@/lib/seo';
 export const metadata: Metadata = buildMetadata({
   title: 'Uslovi kupovine',
   description:
-    'Uslovi kupovine knjiga izdavačke kuće Art Rabic — naručivanje, cijene, plaćanje pouzećem ili na račun, rokovi dostave, reklamacije i povrat.',
+    'Uslovi kupovine knjiga izdavačke kuće Art Rabic — naručivanje, cijene, plaćanje pouzećem, rokovi dostave, reklamacije i povrat.',
   path: '/uslovi-kupovine',
 });
 
@@ -53,7 +53,7 @@ export default function UsloviKupovinePage() {
         <div>
           <h2 className="font-serif text-2xl text-graphite mb-4">4. Plaćanje i dostava</h2>
           <p className="text-muted leading-relaxed">
-            Plaćanje se vrši pouzećem pri preuzimanju pošiljke ili uplatom na račun prije slanja; kod uplate na račun pošiljka se šalje nakon što uplata bude evidentirana. Dostava se vrši na cijelom području Bosne i Hercegovine putem poštanskih i kurirskih službi. Rok dostave iznosi 2–4 radna dana od slanja pošiljke.
+            Plaćanje se vrši pouzećem pri preuzimanju pošiljke. Dostava se vrši na cijelom području Bosne i Hercegovine putem poštanskih i kurirskih službi. Rok dostave iznosi 2–4 radna dana od slanja pošiljke.
           </p>
         </div>
 
