@@ -5,7 +5,7 @@ import { buildMetadata } from '@/lib/seo';
 export const metadata: Metadata = buildMetadata({
   title: 'Art Rabic | Izdavačka kuća iz Sarajeva',
   description:
-    'Art Rabic – izdavačka kuća Gorana Mikulića. Preko 160 naslova: monografije, historija Sarajeva i BiH, eseji i umjetnost. Naručite online uz dostavu pouzećem.',
+    'Art Rabic – izdavačka kuća Gorana Mikulića. Preko 160 naslova: monografije, historija Sarajeva i BiH, eseji i umjetnost.',
   path: '/',
   // Naslov već sadrži brend — bez ovoga bi ispalo „… | Art Rabic | Art Rabic".
   absoluteTitle: true,

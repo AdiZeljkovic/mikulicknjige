@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 import { absoluteUrl } from '@/lib/seo'
+import { NARUDZBE_UKLJUCENE } from '@/lib/narudzbe'
 
 // Slaže se pri svakom zahtjevu. Sa `revalidate = 3600` Next je sitemap
 // napravio jednom, u Docker buildu gdje baze nema, i taj prazan (samo 7
@@ -43,8 +44,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl('/knjige'), lastModified: catalogLastModified, changeFrequency: 'daily', priority: 0.9 },
     { url: absoluteUrl('/o-nama'), lastModified: STATIC_LAST_MODIFIED, changeFrequency: 'yearly', priority: 0.6 },
     { url: absoluteUrl('/kontakt'), lastModified: STATIC_LAST_MODIFIED, changeFrequency: 'yearly', priority: 0.5 },
-    { url: absoluteUrl('/o-kupovini'), lastModified: STATIC_LAST_MODIFIED, changeFrequency: 'yearly', priority: 0.4 },
-    { url: absoluteUrl('/uslovi-kupovine'), lastModified: STATIC_LAST_MODIFIED, changeFrequency: 'yearly', priority: 0.3 },
+    ...(NARUDZBE_UKLJUCENE
+      ? ([
+          { url: absoluteUrl('/o-kupovini'), lastModified: STATIC_LAST_MODIFIED, changeFrequency: 'yearly', priority: 0.4 },
+          { url: absoluteUrl('/uslovi-kupovine'), lastModified: STATIC_LAST_MODIFIED, changeFrequency: 'yearly', priority: 0.3 },
+        ] as MetadataRoute.Sitemap)
+      : []),
     { url: absoluteUrl('/pravila-koristenja'), lastModified: STATIC_LAST_MODIFIED, changeFrequency: 'yearly', priority: 0.3 },
     ...bookUrls,
   ]

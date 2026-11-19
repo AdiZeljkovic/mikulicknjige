@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, CornerDownRight } from 'lucide-react';
 import ShareButton from './ShareButton';
+import { NARUDZBE_UKLJUCENE } from '@/lib/narudzbe';
 
 type Book = {
   id: string;
@@ -79,7 +80,7 @@ export default function BookDetailContent({ book }: { book: Book }) {
             </div>
             
             <div className="mb-12">
-              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-6">
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                 <span className="text-2xl sm:text-3xl md:text-4xl font-serif text-graphite">{book.price}</span>
                 {book.priceEur && (
                   <span className="text-lg sm:text-xl md:text-2xl font-serif text-muted">
@@ -88,14 +89,16 @@ export default function BookDetailContent({ book }: { book: Book }) {
                   </span>
                 )}
               </div>
-              
-              <Link 
-                href={`/checkout/${book.id}`}
-                className="w-full md:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 text-xs font-bold tracking-widest uppercase transition-all bg-brand-red text-white hover:bg-white hover:text-brand-red border border-brand-red group"
-              >
-                Kupi knjigu
-                <CornerDownRight className="w-4 h-4 group-hover:translate-x-1 group-hover:translate-y-1 transition-transform" />
-              </Link>
+
+              {NARUDZBE_UKLJUCENE && (
+                <Link
+                  href={`/checkout/${book.id}`}
+                  className="mt-6 w-full md:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 text-xs font-bold tracking-widest uppercase transition-all bg-brand-red text-white hover:bg-white hover:text-brand-red border border-brand-red group"
+                >
+                  Kupi knjigu
+                  <CornerDownRight className="w-4 h-4 group-hover:translate-x-1 group-hover:translate-y-1 transition-transform" />
+                </Link>
+              )}
             </div>
 
             {/* Description as an editorial quote/excerpt */}

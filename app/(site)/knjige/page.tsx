@@ -8,7 +8,7 @@ import { bookListLd, breadcrumbLd, buildMetadata } from '@/lib/seo';
 export const metadata: Metadata = buildMetadata({
   title: 'Naše knjige',
   description:
-    'Kompletan katalog izdavačke kuće Art Rabic — preko 160 naslova: monografije, knjige o Sarajevu i historiji BiH, eseji i umjetnost. Naručite uz dostavu pouzećem.',
+    'Kompletan katalog izdavačke kuće Art Rabic — preko 160 naslova: monografije, knjige o Sarajevu i historiji BiH, eseji i umjetnost.',
   path: '/knjige',
 });
 

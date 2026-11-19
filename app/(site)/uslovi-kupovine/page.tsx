@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { NARUDZBE_UKLJUCENE } from '@/lib/narudzbe';
 import JsonLd from '@/components/seo/JsonLd';
 import { breadcrumbLd, buildMetadata } from '@/lib/seo';
 
@@ -11,6 +13,7 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default function UsloviKupovinePage() {
+  if (!NARUDZBE_UKLJUCENE) redirect('/kontakt');
   return (
     <div className="bg-white min-h-screen pt-24">
       <JsonLd

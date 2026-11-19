@@ -11,7 +11,7 @@ export function GET() {
       label: 'Art Rabic',
       title: 'Izdavačka kuća iz Sarajeva',
       subtitle: 'Monografije, historija i umjetnost — preko 160 naslova',
-      badge: 'Dostava pouzećem',
+      badge: 'Sarajevo',
       titleSize: 72,
     }),
     {

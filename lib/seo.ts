@@ -8,6 +8,7 @@
  */
 
 import type { Metadata } from 'next'
+import { NARUDZBE_UKLJUCENE } from './narudzbe'
 
 export const SITE = {
   name: 'Art Rabic',
@@ -231,17 +232,22 @@ export function bookLd(book: BookLdInput) {
     ...(book.pages ? { numberOfPages: book.pages } : {}),
     ...(book.year ? { datePublished: String(book.year) } : {}),
     ...(bookFormatLd(book.format) ? { bookFormat: bookFormatLd(book.format) } : {}),
-    offers: {
-      '@type': 'Offer',
-      url,
-      price: priceNumber(book.price).toFixed(2),
-      priceCurrency: 'BAM',
-      availability: book.inStock
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-      itemCondition: 'https://schema.org/NewCondition',
-      seller: { '@id': organizationId },
-    },
+    // Bez narudžbi na stranici nema ni ponude — Google ne smije prikazivati „na stanju".
+    ...(NARUDZBE_UKLJUCENE
+      ? {
+          offers: {
+            '@type': 'Offer',
+            url,
+            price: priceNumber(book.price).toFixed(2),
+            priceCurrency: 'BAM',
+            availability: book.inStock
+              ? 'https://schema.org/InStock'
+              : 'https://schema.org/OutOfStock',
+            itemCondition: 'https://schema.org/NewCondition',
+            seller: { '@id': organizationId },
+          },
+        }
+      : {}),
   }
 }
 

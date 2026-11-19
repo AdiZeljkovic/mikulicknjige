@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { NARUDZBE_UKLJUCENE } from '@/lib/narudzbe';
 import { prisma } from '@/lib/prisma';
 import { bookToUI, toId } from '@/lib/format';
 import CheckoutContent from '@/components/checkout/CheckoutContent';
@@ -32,6 +33,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const bookId = toId(id);
   if (!bookId) notFound();
+  if (!NARUDZBE_UKLJUCENE) redirect(`/knjige/${bookId}`);
 
   const book = await getBook(bookId);
 

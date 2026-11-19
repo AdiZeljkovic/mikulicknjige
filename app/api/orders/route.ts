@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth'
 import { getClientIp } from '@/lib/ip'
 import { rateLimit } from '@/lib/rate-limit'
 import { sendOrderConfirmation, sendOrderNotification } from '@/lib/email'
+import { NARUDZBE_UKLJUCENE } from '@/lib/narudzbe'
 
 const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED']
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -36,6 +37,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!NARUDZBE_UKLJUCENE) {
+    return NextResponse.json(
+      { error: 'Narudžbe putem stranice trenutno nisu moguće.' },
+      { status: 410 }
+    )
+  }
+
   const limit = rateLimit(`order:${getClientIp(req)}`, 5, 60 * 60 * 1000)
   if (!limit.allowed) {
     return NextResponse.json(

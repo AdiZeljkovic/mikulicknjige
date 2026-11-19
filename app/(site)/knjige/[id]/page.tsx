@@ -39,7 +39,7 @@ function metaDescription(book: {
   description?: string | null
   price: unknown
 }): string {
-  const fallback = `${book.title} — ${book.author}. Izdanje Art Rabica, cijena ${formatPrice(book.price)}. Naručite uz dostavu pouzećem.`
+  const fallback = `${book.title} — ${book.author}. Izdanje Art Rabica, cijena ${formatPrice(book.price)}.`
   const raw = book.description?.trim() || fallback
   if (raw.length <= 160) return raw
   const cut = raw.slice(0, 157)

@@ -5,6 +5,7 @@ import { ShoppingCart, ArrowRight, BookOpen, Calendar, Layers, Globe } from 'luc
 import Image from 'next/image';
 import Link from 'next/link';
 import type { BookUI } from '@/lib/format';
+import { NARUDZBE_UKLJUCENE } from '@/lib/narudzbe';
 
 export default function FeaturedBook({ book }: { book: BookUI | null }) {
   if (!book) return null;
@@ -85,13 +86,15 @@ export default function FeaturedBook({ book }: { book: BookUI | null }) {
               </span>
 
               <div className="flex items-center gap-4">
-                <Link
-                  href={`/checkout/${book.id}`}
-                  className="bg-brand-dark hover:bg-brand-red text-white px-8 py-3.5 text-sm font-medium tracking-wide transition-colors flex items-center justify-center gap-2 flex-grow sm:flex-grow-0"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  Naruči
-                </Link>
+                {NARUDZBE_UKLJUCENE && (
+                  <Link
+                    href={`/checkout/${book.id}`}
+                    className="bg-brand-dark hover:bg-brand-red text-white px-8 py-3.5 text-sm font-medium tracking-wide transition-colors flex items-center justify-center gap-2 flex-grow sm:flex-grow-0"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    Naruči
+                  </Link>
+                )}
                 <Link
                   href={`/knjige/${book.id}`}
                   className="text-graphite hover:text-brand-red text-sm font-semibold transition-colors flex items-center gap-2 group whitespace-nowrap"

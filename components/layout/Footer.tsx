@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { NARUDZBE_UKLJUCENE } from '@/lib/narudzbe';
 
 export default function Footer() {
   return (
@@ -43,8 +44,12 @@ export default function Footer() {
             <h4 className="font-bold text-graphite mb-5 text-sm">Informacije</h4>
             <ul className="flex flex-col gap-3">
               {[
-                { label: 'O kupovini', href: '/o-kupovini' },
-                { label: 'Uslovi kupovine', href: '/uslovi-kupovine' },
+                ...(NARUDZBE_UKLJUCENE
+                  ? [
+                      { label: 'O kupovini', href: '/o-kupovini' },
+                      { label: 'Uslovi kupovine', href: '/uslovi-kupovine' },
+                    ]
+                  : []),
                 { label: 'Pravila korištenja', href: '/pravila-koristenja' },
               ].map((link) => (
                 <li key={link.label}><Link href={link.href} className="text-sm text-muted hover:text-brand-red transition-colors">{link.label}</Link></li>

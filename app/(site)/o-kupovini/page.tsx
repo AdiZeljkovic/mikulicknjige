@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { NARUDZBE_UKLJUCENE } from '@/lib/narudzbe';
 import JsonLd from '@/components/seo/JsonLd';
 import { breadcrumbLd, absoluteUrl, buildMetadata, SITE } from '@/lib/seo';
 
@@ -36,6 +38,7 @@ const faq = [
 ];
 
 export default function OKupoviniPage() {
+  if (!NARUDZBE_UKLJUCENE) redirect('/kontakt');
   return (
     <div className="bg-white min-h-screen pt-24">
       <JsonLd
